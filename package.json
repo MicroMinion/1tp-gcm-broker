@@ -1,0 +1,15 @@
+{
+  "name": "flunky-gcm-server",
+  "version": "1.0.0",
+  "description": "Broker for Flunky messages using GCM as a transport",
+  "main": "index.js",
+  "scripts": {
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@bitbucket.org/nodatacenter/flunky-gcm-server.git"
+  },
+  "author": "Thomas Delaet <thomas@delaet.org>",
+  "license": "BSD-2-Clause",
+  "homepage": "https://bitbucket.org/nodatacenter/flunky-gcm-server#readme"
+}
