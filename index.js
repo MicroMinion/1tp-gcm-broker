@@ -9,13 +9,9 @@ var apiKey = process.env.API_KEY;
 var gcm = new GCM(projectId, apiKey);
 
 //directory mapping publicKey => registrationId for clients
-var directory = {};
+var _pendingRoutedMessages = {};
 
 gcm.on('message', function(messageId, from, category, data) {
-    //console.log(messageId);
-    //console.log(from);
-    //console.log(category);
-    //console.log(data);
     if(data.type === "register") {
         var boxResult = curve.verify(data.signature, messageId, data.publicKey, serverKey);
         if(boxResult === from) {
@@ -25,22 +21,34 @@ gcm.on('message', function(messageId, from, category, data) {
             sendRegistrationFailed(from);
         };
     } else if(data.type === "message") {
+        if(data.to && directory[data.to]) {
+            var id = uuid.v4();
+            _pendingRoutedMessages[id] = messageId;
+            send(directory[data.type.destination], id, data, true);
 
+        } else {
+            sendNotDelivered(messageId);
+        };
     };
 });
 
 var sendRegistrationOk = function(destination) {
     console.log("sending registration ok");
-    var options = {};
-    options.messageId = uuid.v4();
-    options.time_to_live = 0;
-    options.delay_while_idle = false;
-    options.delivery_receipt_requested = true;
-    gcm.send(destination, {type: "registrationOK"}, options) 
+    send(destination, uuid.v4(), {type: "registrationOK"}, false); 
 };
 
 var sendRegistrationFailed = function(destination) {
     console.log("sending registration failed");
+    send(destination, uuid.v4(), {type: "registrationFailed"}, false);
+};
+
+var send(destination, id, data, receipt) {
+    var options = {};
+    options.messageId = id;
+    options.time_to_live = 0;
+    options.delay_while_idle = false;
+    options.delivery_receipt_requested = receipt;
+    gcm.send(destination, data, options);
 };
 
 gcm.on('receipt', function(messageId, from, category, data) {
