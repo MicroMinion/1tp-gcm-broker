@@ -12,5 +12,10 @@
   "license": "BSD-2-Clause",
   "homepage": "https://bitbucket.org/nodatacenter/flunky-gcm-server#readme",
   "dependencies": {
+    "curve-protocol": "git+ssh://git@bitbucket.org:nodatacenter/curve-protocol.git",
+    "inherits": "^2.0.1",
+    "ltx": "^0.9.1",
+"node-xmpp-client": "^1.0.0-alpha23",
+    "node-uuid": "^1.4.3"
   }
 }
