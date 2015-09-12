@@ -9,7 +9,6 @@ var crypto = require('crypto');
 var GCMClient = function(projectId, apiKey) {
     this.draining = false;
     this.queued = [];
-    this.acks = [];
     this.client = new xmpp.Client({
         type: 'client',
         jid: projectId + '@gcm.googleapis.com',
@@ -62,15 +61,11 @@ var GCMClient = function(projectId, apiKey) {
                     break;
 
                 case 'nack':
-                    if (data.message_id in gcm.acks) {
-                        gcm.acks[data.message_id](data.error);
-                    }
+                    gcm.emit('nack', data.message_id, data.error, data.error_description);
                     break;
 
                 case 'ack':
-                    if (data.message_id in gcm.acks) {
-                        gcm.acks[data.message_id](undefined, data.message_id, data.from);
-                    }
+                    gcm.emit('ack', data.message_id);
                     break;
 
                 case 'receipt':
@@ -119,7 +114,7 @@ GCMClient.prototype.connect = function() {
     this.client.connect();   
 };
 
-GCMClient.prototype.send = function(to, data, options, cb) {
+GCMClient.prototype.send = function(to, data, options) {
     var messageId;
     if(options.messageId) {
         messageId = options.messageId;
@@ -136,10 +131,6 @@ GCMClient.prototype.send = function(to, data, options, cb) {
     Object.keys(options).forEach(function(option) {
         outData[option] = options[option];
     });
-
-    if (cb !== undefined) {
-        this.acks[messageId] = cb;
-    }
     this._send(outData);
 };
 

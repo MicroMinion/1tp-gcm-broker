@@ -1,63 +1,83 @@
 var GCM = require("./node-gcm-ccs.js");
-var curve = require("curve-protocol");
 var uuid = require("node-uuid");
 
 var projectId = process.env.PROJECT_ID; 
-var serverKey = process.env.GCM_SECRET_KEY;
 var apiKey = process.env.API_KEY;
 
 var gcm = new GCM(projectId, apiKey);
 
-//directory mapping publicKey => registrationId for clients
-var _pendingRoutedMessages = {};
+var queue = {};
 
 gcm.on('message', function(messageId, from, category, data) {
-    if(data.type === "register") {
-        var boxResult = curve.verify(data.signature, messageId, data.publicKey, serverKey);
-        if(boxResult === from) {
-            directory[data.publicKey] = from;
-            sendRegistrationOk(from);
-        } else {
-            sendRegistrationFailed(from);
-        };
-    } else if(data.type === "message") {
-        if(data.to && directory[data.to]) {
+    console.log(data);
+    if(data.type && data.type === "MESSAGE") {
+        if(data.destination && data.data) {
             var id = uuid.v4();
-            _pendingRoutedMessages[id] = messageId;
-            send(directory[data.type.destination], id, data, true);
-
+            data.source = from;
+            queue[messageId] = data;
+            //setTimeout(function() {
+            //    console.log("message delivery timed out");
+            //    sendNotDelivered(from, data.destination, messageId);
+            //}, 500);
+            send(data.destination, messageId, data, true);
         } else {
-            sendNotDelivered(messageId);
+            console.log("incorrect parameters");
+            sendNotDelivered(from, data.destination, messageId);
         };
+    } else {
+        console.log("unrecognized data type");
+        console.log(data);
     };
 });
 
-var sendRegistrationOk = function(destination) {
-    console.log("sending registration ok");
-    send(destination, uuid.v4(), {type: "registrationOK"}, false); 
-};
-
-var sendRegistrationFailed = function(destination) {
-    console.log("sending registration failed");
-    send(destination, uuid.v4(), {type: "registrationFailed"}, false);
-};
-
-var send(destination, id, data, receipt) {
+var send = function(destination, id, data, receipt) {
     var options = {};
     options.messageId = id;
     options.time_to_live = 0;
     options.delay_while_idle = false;
     options.delivery_receipt_requested = receipt;
+    console.log("sending message");
+    console.log(data);
     gcm.send(destination, data, options);
 };
 
+var sendNotDelivered = function(from, to, messageId) {
+    if(!queue[messageId]) { return; };
+    var data = {
+        type: "MESSAGE_NOT_DELIVERED",
+        destination: to,
+        message_id: messageId
+    };
+    send(from, uuid.v4(), data, false);
+    delete queue[messageId];
+};
+
+var sendDelivered = function(from, to, messageId) {
+    if(!queue[messageId]) { return; };
+    var data = {
+        type: "MESSAGE_DELIVERED",
+        destination: to,
+        message_id: messageId
+    };
+    send(from, uuid.v4(), data, false);
+    delete queue[messageId];
+};
+
 gcm.on('receipt', function(messageId, from, category, data) {
-    //console.log(messageId);
-    //console.log(from);
-    //console.log(category);
-    //console.log(data);
+    console.log(messageId);
+    console.log(data);
+    var sender = queue[data.original_message_id].source;
+    sendDelivered(sender, data.device_registration_id, data.original_message_id);
 });
 
+gcm.on('nack', function(messageId, error, description) {
+    console.log("received nack");
+    console.log(error);
+    console.log(description);
+    var from = queue[messageId].source;
+    var to = queue[messageId].destination;
+    sendNotDelivered(from, to, messageId);
+});
 
 gcm.on('connected', function() {
     console.log("received connected event");
