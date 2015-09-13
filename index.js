@@ -12,17 +12,10 @@ gcm.on('message', function(messageId, from, category, data) {
     console.log(data);
     if(data.type && data.type === "MESSAGE") {
         if(data.destination && data.data) {
-            var id = uuid.v4();
             data.source = from;
-            queue[messageId] = data;
-            //setTimeout(function() {
-            //    console.log("message delivery timed out");
-            //    sendNotDelivered(from, data.destination, messageId);
-            //}, 500);
-            send(data.destination, messageId, data, true);
+            send(data.destination, uuid.v4(), data, false);
         } else {
             console.log("incorrect parameters");
-            sendNotDelivered(from, data.destination, messageId);
         };
     } else {
         console.log("unrecognized data type");
@@ -41,44 +34,6 @@ var send = function(destination, id, data, receipt) {
     gcm.send(destination, data, options);
 };
 
-var sendNotDelivered = function(from, to, messageId) {
-    if(!queue[messageId]) { return; };
-    var data = {
-        type: "MESSAGE_NOT_DELIVERED",
-        destination: to,
-        message_id: messageId
-    };
-    send(from, uuid.v4(), data, false);
-    delete queue[messageId];
-};
-
-var sendDelivered = function(from, to, messageId) {
-    if(!queue[messageId]) { return; };
-    var data = {
-        type: "MESSAGE_DELIVERED",
-        destination: to,
-        message_id: messageId
-    };
-    send(from, uuid.v4(), data, false);
-    delete queue[messageId];
-};
-
-gcm.on('receipt', function(messageId, from, category, data) {
-    console.log(messageId);
-    console.log(data);
-    var sender = queue[data.original_message_id].source;
-    sendDelivered(sender, data.device_registration_id, data.original_message_id);
-});
-
-gcm.on('nack', function(messageId, error, description) {
-    console.log("received nack");
-    console.log(error);
-    console.log(description);
-    var from = queue[messageId].source;
-    var to = queue[messageId].destination;
-    sendNotDelivered(from, to, messageId);
-});
-
 gcm.on('connected', function() {
     console.log("received connected event");
 });
@@ -87,7 +42,6 @@ gcm.on("disconnected", function() {
     console.log("received disconnected event");
     gcm.connect();
 });
-
 
 gcm.on("error", function(error) {
     console.log("received error event");
