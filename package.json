@@ -1,21 +1,33 @@
 {
-  "name": "flunky-gcm-server",
-  "version": "1.0.0",
-  "description": "Broker for Flunky messages using GCM as a transport",
+  "name": "1tp-gcm-broker",
+  "version": "0.0.1",
+  "description": "Broker for Google Cloud Messaging (GCM) Transport in 1tp",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "check-updates": "npm-check",
+    "test": "echo",
+    "2npm": "publish"
+  },
+  "bin": {
+    "1tp-gcm-broker": "./index.js"
+  },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@bitbucket.org/nodatacenter/flunky-gcm-server.git"
+    "url": "https://github.com/MicroMinion/1tp-gcm-broker.git"
   },
-  "author": "Thomas Delaet <thomas@delaet.org>",
-  "license": "BSD-2-Clause",
-  "homepage": "https://bitbucket.org/nodatacenter/flunky-gcm-server#readme",
+  "author": {
+    "name": "Thomas Delaet",
+    "email": "thomas@delaet.org"
+  },
+  "engines": {
+    "node": ">=4.x.x"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "publish": "^0.6.0"
+  },
   "dependencies": {
-    "curve-protocol": "git+ssh://git@bitbucket.org:nodatacenter/curve-protocol.git",
-    "inherits": "^2.0.1",
-    "ltx": "^0.9.1",
-"node-xmpp-client": "^1.0.0-alpha23",
-    "node-uuid": "^1.4.3"
+    "node-gcm-ccs": "0.0.1",
+    "node-uuid": "1.4.7"
   }
 }
